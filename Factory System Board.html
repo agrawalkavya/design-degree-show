@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Factory System Board · DoD DTU · Kavya Agrawal</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="data.js"></script>
+<script type="text/babel" src="components.jsx"></script>
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="board-container"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+const D = window.BOARD_DATA;
+
+// Pre-computed pin positions for the thread overlays.
+// Coordinates are in board pixels (1728 x 1296).
+// Cost thread: weaves through procurement → cutting → bundling → stitching → finishing → packing,
+// passing over each zone's stat block.
+// Hands thread: snakes through every zone's hands-pill region.
+const ZONE_TOP = 295;
+const ZONE_BOTTOM = 825;
+const ZONES_LEFT = 60;
+const ZONES_RIGHT = 1668;
+const ZONE_W = (ZONES_RIGHT - ZONES_LEFT) / 7;
+
+function zoneCenterX(i) { return ZONES_LEFT + ZONE_W * i + ZONE_W / 2; }
+
+// zones now: top 360, height 380 -> bottom 740
+const COST_PINS = [
+  { x: zoneCenterX(0), y: 540 },
+  { x: zoneCenterX(1), y: 530 },
+  { x: zoneCenterX(2), y: 540 },
+  { x: zoneCenterX(3), y: 525 },
+  { x: zoneCenterX(4), y: 540 },
+  { x: zoneCenterX(5), y: 530 },
+  { x: zoneCenterX(6), y: 540 },
+];
+
+const HANDS_PINS = [
+  { x: zoneCenterX(0) - 8, y: 470 },
+  { x: zoneCenterX(1) - 6, y: 475 },
+  { x: zoneCenterX(2) - 4, y: 470 },
+  { x: zoneCenterX(3),     y: 478 },
+  { x: zoneCenterX(4) + 4, y: 470 },
+  { x: zoneCenterX(5) + 6, y: 475 },
+  { x: zoneCenterX(6) + 8, y: 470 },
+];
+
+function Toolbar({ board, setBoard }) {
+  return (
+    <div className="toolbar">
+      <span style={{opacity:0.6}}>VIEW</span>
+      <button
+        className={!board.hideCost ? 'active' : ''}
+        onClick={() => setBoard(b => ({...b, hideCost: !b.hideCost}))}
+      >Cost thread</button>
+      <button
+        className={!board.hideHands ? 'active' : ''}
+        onClick={() => setBoard(b => ({...b, hideHands: !b.hideHands}))}
+      >Hands thread</button>
+      <button
+        className={!board.hideFlaps ? 'active' : ''}
+        onClick={() => setBoard(b => ({...b, hideFlaps: !b.hideFlaps}))}
+      >Flaps & tags</button>
+      <span className="sep">│</span>
+      <span style={{opacity:0.6}}>ZOOM</span>
+      <input type="range" min="20" max="100" step="5"
+        value={board.zoom}
+        onChange={(e) => setBoard(b => ({...b, zoom: +e.target.value}))} />
+      <span style={{minWidth: 36}}>{board.zoom}%</span>
+      <span className="sep">│</span>
+      <button onClick={() => setBoard(b => ({...b, zoom: 50}))}>Fit</button>
+      <button onClick={() => setBoard(b => ({...b, zoom: 100}))}>100%</button>
+      <span className="sep">│</span>
+      <span style={{opacity:0.6}}>4 ft × 3 ft · 1728 × 1296 px</span>
+    </div>
+  );
+}
+
+function App() {
+  const [board, setBoard] = useState({
+    hideCost: false,
+    hideHands: false,
+    hideFlaps: false,
+    zoom: 50,
+  });
+
+  // Auto-fit on load
+  useEffect(() => {
+    const fit = () => {
+      const avail = window.innerWidth - 80;
+      const fitZoom = Math.min(100, Math.max(20, Math.floor((avail / 1728) * 100)));
+      setBoard(b => ({...b, zoom: fitZoom}));
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  const classes = [
+    'board',
+    board.hideCost ? 'hide-cost-threads' : '',
+    board.hideHands ? 'hide-hands-threads' : '',
+    board.hideFlaps ? 'hide-flaps' : '',
+  ].filter(Boolean).join(' ');
+
+  return (
+    <>
+      <Toolbar board={board} setBoard={setBoard} />
+
+      <div className="board-wrapper" style={{
+        transform: `scale(${board.zoom / 100})`,
+        marginBottom: `${1296 * (board.zoom/100 - 1)}px`,
+      }}>
+        <div className={classes}>
+          <div className="blueprint-grid"></div>
+          <div className="trim tl"></div>
+          <div className="trim tr"></div>
+          <div className="trim bl"></div>
+          <div className="trim br"></div>
+
+          {/* HEADER */}
+          <div className="header-strip">
+            <div className="headline">
+              <div className="eyebrow">
+                <span className="num">B.Des. Degree Project · 2024–25</span>
+                <span className="dot"></span>
+                <span>Department of Design · DTU</span>
+                <span className="dot"></span>
+                <span>{D.meta.location}</span>
+              </div>
+              <h1>
+                How many <em>hands</em> touch the<br/>
+                shirt you're wearing?
+              </h1>
+              <div className="sub">
+                A 5,000 sq ft floor in Samaypur, Delhi, supplying DRAAX Fashions, Roadster, Rcode and SZN on Myntra. Trace the visible processes, then follow the threads to the invisible systems that hold them together — fabric MOQs, size asymmetries, the 60% overhead, the platform's algorithm. Count the hands. There is no number printed for you.
+              </div>
+            </div>
+            <div className="header-meta">
+              <div className="meta-row"><span className="meta-label">PROJECT</span><br/><span className="meta-strong">{D.meta.project}</span></div>
+              <div className="meta-row"><span className="meta-label">BY</span> <span className="meta-strong">{D.meta.student}</span></div>
+              <div className="meta-row"><span className="meta-label">SUPERVISOR</span> {D.meta.supervisor}</div>
+              <div className="meta-row"><span className="meta-label">PERIOD</span> {D.meta.period}</div>
+              <div className="meta-row"><span className="meta-label">SHEET</span> 01 / 01 · 48 in × 36 in</div>
+            </div>
+          </div>
+
+          {/* LEGEND */}
+          <div className="legend-bar">
+            <div className="legend-block">
+              <div className="legend-title">Threads — what's being traced</div>
+              <div className="legend-items">
+                <span className="li" style={{color:'#b04a2f'}}>
+                  <span className="swatch thread"></span> COST BUILD-UP (fabric → stitch → overhead → accessories)
+                </span>
+                <span className="li" style={{color:'#1f3a5f'}}>
+                  <span className="swatch thread" style={{borderTop:'1.5px dashed #1f3a5f', height:0}}></span>
+                  <span style={{marginLeft:-22, paddingLeft:22}}>HANDS (every pair the piece passes through)</span>
+                </span>
+              </div>
+            </div>
+            <div className="legend-block">
+              <div className="legend-title">Bottleneck severity</div>
+              <div className="legend-items">
+                <span className="li"><span className="swatch dot" style={{background:'#2f5a3a'}}></span>SMOOTH</span>
+                <span className="li"><span className="swatch dot" style={{background:'#c89a3a'}}></span>FRICTION</span>
+                <span className="li"><span className="swatch dot" style={{background:'#b04a2f'}}></span>BREAKDOWN</span>
+              </div>
+            </div>
+            <div className="legend-block">
+              <div className="legend-title">Cost categories (the threads weave these)</div>
+              <div className="legend-items">
+                <span className="li"><span className="swatch" style={{background:'#b04a2f'}}></span>FABRIC</span>
+                <span className="li"><span className="swatch" style={{background:'#2f5a3a'}}></span>STITCHING</span>
+                <span className="li"><span className="swatch" style={{background:'#6a4f8a'}}></span>OVERHEAD (60%)</span>
+                <span className="li"><span className="swatch" style={{background:'#c89a3a'}}></span>ACCESSORIES</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ZONES */}
+          <div className="zones-canvas">
+            {D.zones.map((z, i) => (
+              <Zone key={z.id} zone={z} idx={i} total={D.zones.length} />
+            ))}
+          </div>
+
+          {/* THREAD OVERLAY */}
+          <ThreadOverlay pins={{ cost: COST_PINS, hands: HANDS_PINS }} />
+
+          {/* HUNG TAGS */}
+          {D.hungTags.map(t => <HungTag key={t.id} tag={t} />)}
+
+          {/* DATA STRIP */}
+          <div className="data-strip">
+            {D.data.map((d, i) => (
+              <div key={i} className="data-cell">
+                <div className="num">{d.num.split('/').map((s, j, arr) => (
+                  <React.Fragment key={j}>{j > 0 && <em> / </em>}{s.trim()}</React.Fragment>
+                ))}</div>
+                <div className="lbl">
+                  {d.lbl.split('\n').map((l, j) => (
+                    <div key={j}>
+                      {l.includes('*') ? (
+                        <>
+                          {l.split('*')[0]}<span className="ast">*{l.split('*')[1]}</span>
+                        </>
+                      ) : l}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* SYSTEMS GRID */}
+          <div className="systems-grid">
+            {D.systems.map((s, i) => (
+              <div key={i} className={`sys-panel ${s.dark ? 'dark' : ''}`}>
+                <div className="sys-num">{s.num}</div>
+                <div className="sys-title" dangerouslySetInnerHTML={{__html: s.title}}></div>
+                <div className="sys-body" style={{whiteSpace:'pre-line'}}>{s.body}</div>
+                <div className="sys-meta">{s.meta}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* FLAPS / PULL-TABS */}
+          {D.flaps.map(f =>
+            f.kind === 'flap'
+              ? <LiftFlap key={f.id} flap={f} />
+              : <PullTab key={f.id} flap={f} />
+          )}
+
+          {/* STAMPS */}
+          <div className="stamp" style={{top: 235, right: 130}}>SAMAYPUR · DELHI</div>
+
+          {/* FOOTER */}
+          <div className="board-footer">
+            <span>SHEET 01/01 · {D.meta.boardSize}</span>
+            <span>K. AGRAWAL · 2K22/BD/58 · MAY 2025</span>
+            <span>{D.meta.department}</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('board-container')).render(<App />);
+</script>
+
+</body>
+</html>

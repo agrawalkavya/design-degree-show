@@ -1,0 +1,1149 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+  :root {
+    --ink: #1a1612;
+    --cream: #f5f0e8;
+    --paper: #ede8db;
+    --off: #d6d0c2;
+    --thread-red: #c0392b;
+    --thread-amber: #e67e22;
+    --thread-teal: #16a085;
+    --thread-blue: #2980b9;
+    --thread-purple: #8e44ad;
+    --thread-grey: #7f8c8d;
+    /* tinted stage washes, slightly colourful, still editorial */
+    --tint-blue: #eef3f8;
+    --tint-teal: #e8f3ef;
+    --tint-red: #f7ece9;
+    --tint-amber: #f8efe3;
+    --tint-purple: #f1ebf3;
+    --tint-grey: #ecedeb;
+    --stage-w: 340px;
+    --photo-h: 86px;
+    --board-bg: #f2ece0;
+    /* TWEAKABLE, controlled by Tweaks panel */
+    --caption-size: 9.5px;
+    --caption-leading: 1.5;
+    --caption-style: italic;
+    --caption-opacity: 0.78;
+    --photo-w: 76px;
+    --photo-h-ratio: 57px;
+    --photo-gap: 8px;
+    --roll-gap: 3px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--board-bg);
+    font-family: 'Instrument Sans', sans-serif;
+    color: var(--ink);
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .board-wrap {
+    width: 100%;
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 28px 40px 22px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 20px;
+    position: relative;
+  }
+  .masthead::after {
+    content: '';
+    display: block;
+    height: 3px;
+    background: repeating-linear-gradient(90deg, var(--thread-red) 0 18px, var(--thread-amber) 18px 36px, var(--thread-teal) 36px 54px, var(--thread-blue) 54px 72px, var(--thread-purple) 72px 90px);
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+  }
+  .main-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 46px;
+    line-height: 1.02;
+    letter-spacing: -1.2px;
+    max-width: 18ch;
+  }
+  .main-title em {
+    font-style: italic;
+    color: #e67e22;
+    opacity: 0.95;
+    font-weight: 400;
+  }
+  .main-title .quiet {
+    opacity: 0.6;
+    font-style: normal;
+  }
+  .subtitle {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-top: 8px;
+    font-family: 'DM Mono', monospace;
+  }
+  .meta-box {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    opacity: 0.45;
+    line-height: 1.8;
+  }
+
+  /* ── LEGEND ── */
+  .legend-bar {
+    background: var(--ink);
+    border-top: 1px solid #2a2520;
+    padding: 10px 40px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+  .legend-label {
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--cream);
+    opacity: 0.35;
+    font-family: 'DM Mono', monospace;
+    margin-right: 4px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10px;
+    color: var(--cream);
+    opacity: 0.7;
+    font-family: 'DM Mono', monospace;
+  }
+  .thread-swatch {
+    width: 32px;
+    height: 2.5px;
+    border-radius: 2px;
+  }
+  .dot-swatch {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  /* ── GRID ── */
+  .stages-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+    padding: 0;
+    position: relative;
+    min-width: 1100px;
+  }
+
+  /* SVG thread overlay */
+  .thread-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ── STAGE CARD ── */
+  .stage {
+    background: var(--cream);
+    border-right: 1px solid var(--off);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 820px;
+  }
+  .stage:last-child { border-right: none; }
+
+  /* per-stage colour wash + accents */
+  .stage[data-thread="blue"]   { background: var(--tint-blue); }
+  .stage[data-thread="teal"]   { background: var(--tint-teal); }
+  .stage[data-thread="red"]    { background: var(--tint-red); }
+  .stage[data-thread="amber"]  { background: var(--tint-amber); }
+  .stage[data-thread="purple"] { background: var(--tint-purple); }
+  .stage[data-thread="grey"]   { background: var(--tint-grey); }
+
+  .stage[data-thread="blue"]   .stage-num { color: var(--thread-blue);   opacity: 0.18; }
+  .stage[data-thread="teal"]   .stage-num { color: var(--thread-teal);   opacity: 0.18; }
+  .stage[data-thread="red"]    .stage-num { color: var(--thread-red);    opacity: 0.18; }
+  .stage[data-thread="amber"]  .stage-num { color: var(--thread-amber);  opacity: 0.20; }
+  .stage[data-thread="purple"] .stage-num { color: var(--thread-purple); opacity: 0.18; }
+  .stage[data-thread="grey"]   .stage-num { color: var(--thread-grey);   opacity: 0.22; }
+
+  .stage[data-thread="blue"]   .stage-header { border-bottom-color: var(--thread-blue); }
+  .stage[data-thread="teal"]   .stage-header { border-bottom-color: var(--thread-teal); }
+  .stage[data-thread="red"]    .stage-header { border-bottom-color: var(--thread-red); }
+  .stage[data-thread="amber"]  .stage-header { border-bottom-color: var(--thread-amber); }
+  .stage[data-thread="purple"] .stage-header { border-bottom-color: var(--thread-purple); }
+  .stage[data-thread="grey"]   .stage-header { border-bottom-color: var(--thread-grey); }
+
+  .stage[data-thread="blue"]   .stage-name em,
+  .stage[data-thread="blue"]   .stage-sub { color: var(--thread-blue); }
+  .stage[data-thread="teal"]   .stage-sub { color: var(--thread-teal); }
+  .stage[data-thread="red"]    .stage-sub { color: var(--thread-red); }
+  .stage[data-thread="amber"]  .stage-sub { color: #a85a16; }
+  .stage[data-thread="purple"] .stage-sub { color: var(--thread-purple); }
+  .stage[data-thread="grey"]   .stage-sub { color: #4a5658; }
+  .stage .stage-sub { opacity: 0.75; }
+
+  .stage-header {
+    padding: 16px 14px 12px;
+    border-bottom: 3px solid var(--ink);
+    position: relative;
+  }
+  .stage-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 56px;
+    line-height: 1;
+    opacity: 0.06;
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    color: var(--ink);
+    user-select: none;
+    font-style: italic;
+  }
+  .stage-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    line-height: 1.15;
+    color: var(--ink);
+    position: relative;
+    z-index: 1;
+  }
+  .stage-sub {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0.4;
+    margin-top: 5px;
+    font-family: 'DM Mono', monospace;
+  }
+  .header-accent {
+    height: 2px;
+    margin-top: 10px;
+    border-radius: 1px;
+  }
+
+  /* ── PHOTO ROLL ── */
+  .photo-roll {
+    padding: 10px 10px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--roll-gap);
+  }
+  .photo-item {
+    display: flex;
+    gap: var(--photo-gap);
+    align-items: center;
+    min-height: var(--photo-h-ratio);
+  }
+  .photo-frame {
+    flex-shrink: 0;
+    width: var(--photo-w);
+    height: var(--photo-h-ratio); /* 4:3 ratio */
+    border: 1px solid var(--off);
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+  .stage[data-thread="blue"]   .photo-frame { border-color: rgba(41,128,185,0.35); }
+  .stage[data-thread="teal"]   .photo-frame { border-color: rgba(22,160,133,0.35); }
+  .stage[data-thread="red"]    .photo-frame { border-color: rgba(192,57,43,0.30); }
+  .stage[data-thread="amber"]  .photo-frame { border-color: rgba(230,126,34,0.35); }
+  .stage[data-thread="purple"] .photo-frame { border-color: rgba(142,68,173,0.30); }
+  .stage[data-thread="grey"]   .photo-frame { border-color: rgba(127,140,141,0.45); }
+  .photo-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 4px,
+      rgba(0,0,0,0.03) 4px,
+      rgba(0,0,0,0.03) 5px
+    );
+  }
+  .photo-frame::after {
+    content: 'PHOTO · 4:3';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 1.5px;
+    color: var(--off);
+    opacity: 0.7;
+    text-align: center;
+    line-height: 2;
+  }
+  .photo-caption {
+    flex: 1;
+    font-size: var(--caption-size);
+    line-height: var(--caption-leading);
+    color: var(--ink);
+    opacity: var(--caption-opacity);
+    font-family: 'Instrument Sans', sans-serif;
+    font-style: var(--caption-style);
+    align-self: center;
+  }
+
+  /* ── SECTION DIVIDER ── */
+  .section-title {
+    font-size: 8px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0.35;
+    padding: 8px 10px 4px;
+    font-family: 'DM Mono', monospace;
+    border-top: 0.5px solid var(--off);
+    margin-top: 4px;
+  }
+
+  /* ── SYSTEM TAGS ── */
+  .tags-area {
+    padding: 4px 10px 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tag {
+    font-size: 8.5px;
+    padding: 3px 7px;
+    border-radius: 2px;
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+    letter-spacing: 0.3px;
+    position: relative;
+  }
+  .tag::before {
+    content: '↳';
+    margin-right: 3px;
+    opacity: 0.5;
+  }
+  .tag-bottleneck { background: #fde0dc; color: #8b2020; border: 1px solid #e8a098; }
+  .tag-labour     { background: #fde8c8; color: #7a4500; border: 1px solid #e8bf7a; }
+  .tag-time       { background: #d8e9f8; color: #1a4d7a; border: 1px solid #8fbada; }
+  .tag-waste      { background: #def3cd; color: #2a5a1a; border: 1px solid #99c87a; }
+  .tag-hidden     { background: #ecdcf5; color: #4a1a7a; border: 1px solid #b894d8; }
+  .tag-transport  { background: #d4f0e8; color: #0d4a3a; border: 1px solid #6dc4ae; }
+
+  /* ── STAT BOXES ── */
+  .stat-row {
+    display: flex;
+    gap: 4px;
+    padding: 6px 10px;
+    margin-top: auto;
+  }
+  .stat-box {
+    flex: 1;
+    background: rgba(255,255,255,0.55);
+    border: 0.5px solid var(--off);
+    padding: 6px 5px;
+    border-radius: 2px;
+    text-align: center;
+  }
+  .stage[data-thread="blue"]   .stat-val { color: var(--thread-blue); }
+  .stage[data-thread="teal"]   .stat-val { color: var(--thread-teal); }
+  .stage[data-thread="red"]    .stat-val { color: var(--thread-red); }
+  .stage[data-thread="amber"]  .stat-val { color: #b85a16; }
+  .stage[data-thread="purple"] .stat-val { color: var(--thread-purple); }
+  .stage[data-thread="grey"]   .stat-val { color: #3a4548; }
+  .stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--ink);
+    display: block;
+  }
+  .stat-lbl {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0.4;
+    margin-top: 2px;
+    font-family: 'DM Mono', monospace;
+    display: block;
+    line-height: 1.2;
+  }
+
+  /* ── FLOW CONNECTOR ── */
+  .flow-arrow {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── HAND COUNT BANNER ── */
+  .hand-count {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-top: 3px solid var(--ink);
+  }
+  .hand-item {
+    flex: 1;
+    text-align: center;
+    border-right: 1px solid #2e2a24;
+    padding: 0 10px;
+    position: relative;
+  }
+  .hand-item::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--accent, transparent);
+  }
+  .hand-item:last-child { border-right: none; }
+  .hand-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    display: block;
+    line-height: 1;
+  }
+  .hand-lbl {
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.4;
+    font-family: 'DM Mono', monospace;
+    display: block;
+    margin-top: 3px;
+  }
+
+  /* ── WASTE / TRANSPORT BANDS ── */
+  .waste-band {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 8px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    gap: 6px;
+    opacity: 0.6;
+    border-top: 0.5px dotted var(--off);
+  }
+  .waste-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── INVISIBLE SYSTEMS PANEL ── */
+  .systems-panel {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 18px 40px 22px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px;
+    border-top: 3px solid;
+    border-image: linear-gradient(90deg, var(--thread-red) 0 16.6%, var(--thread-amber) 16.6% 33.2%, var(--thread-teal) 33.2% 49.8%, var(--thread-blue) 49.8% 66.4%, var(--thread-purple) 66.4% 83%, var(--thread-grey) 83% 100%) 1;
+  }
+  .sys-item {
+    border-left: 2px solid var(--accent, var(--thread-red));
+    padding-left: 12px;
+  }
+  .sys-title {
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent, var(--cream));
+    opacity: 0.85;
+    font-family: 'DM Mono', monospace;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .sys-body {
+    font-size: 10px;
+    line-height: 1.7;
+    opacity: 0.65;
+    font-family: 'Instrument Sans', sans-serif;
+  }
+
+  /* ── FOOTER ── */
+  .board-footer {
+    background: var(--ink);
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--cream);
+    opacity: 0.4;
+    letter-spacing: 1px;
+  }
+
+  /* thread accent lines in header */
+  .accent-line {
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  .photo-roll-label {
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0.3;
+    font-family: 'DM Mono', monospace;
+    padding: 6px 10px 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .photo-roll-label::after {
+    content: '';
+    flex: 1;
+    height: 0.5px;
+    background: var(--off);
+  }
+
+  .inline-thread {
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    vertical-align: middle;
+    margin: 0 3px;
+  }
+  /* React mount target for tweaks panel, invisible by default */
+  #tweaks-root { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+  #tweaks-root > * { pointer-events: auto; }
+
+  /* photo-frame: when an <img> is injected by the loader, hide the striped placeholder */
+  .photo-frame.has-photo::before,
+  .photo-frame.has-photo::after { display: none; }
+  .photo-frame img.real {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+</head>
+<body>
+
+<div class="board-wrap">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div>
+      <div class="main-title" id="mainTitle">A shirt passes through<br><em>twenty-two hands</em><span class="quiet">.</span></div>
+      <div class="subtitle" id="mainSub">Six stages, one garment &nbsp;·&nbsp; A systems documentation, Samaypur &nbsp;·&nbsp; DOD, DTU &nbsp;·&nbsp; Design Degree Project</div>
+    </div>
+    <div class="meta-box">
+      BOARD 01 OF 01<br>
+      SCALE: 4FT × 3FT<br>
+      GRID: 6-COLUMN<br>
+      MEDIUM: PHOTO + SYSTEMS MAP
+    </div>
+  </div>
+
+  <!-- LEGEND BAR -->
+  <div class="legend-bar">
+    <span class="legend-label">Thread key:</span>
+    <div class="legend-item"><div class="thread-swatch" style="background:var(--thread-red)"></div> Bottleneck</div>
+    <div class="legend-item"><div class="thread-swatch" style="background:var(--thread-amber)"></div> Labour dependency</div>
+    <div class="legend-item"><div class="thread-swatch" style="background:var(--thread-teal)"></div> Transportation loop</div>
+    <div class="legend-item"><div class="thread-swatch" style="background:var(--thread-blue)"></div> Material flow</div>
+    <div class="legend-item"><div class="thread-swatch" style="background:var(--thread-purple)"></div> Hidden cost</div>
+    <div class="legend-item"><div class="thread-swatch" style="background:var(--thread-grey)"></div> Quality gate</div>
+    <span style="margin-left:auto; font-size:9px; opacity:0.35; font-family:'DM Mono',monospace; color:var(--cream)">↳ Threads are physical on the printed board, passing over photographs</span>
+  </div>
+
+  <!-- STAGE GRID -->
+  <div class="stages-grid" id="stagesGrid">
+
+    <!-- ═══ STAGE 1: PURCHASE ORDER ═══ -->
+    <div class="stage" data-thread="blue">
+      <div class="stage-header">
+        <div class="stage-num">01</div>
+        <div class="stage-name">Purchase Order<br>& Client Brief</div>
+        <div class="stage-sub">Where every thread begins</div>
+        <div class="header-accent" style="background:var(--thread-blue)"></div>
+      </div>
+
+      <div class="photo-roll-label">Documentation roll</div>
+      <div class="photo-roll">
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="01-1"></div>
+          <div class="photo-caption">The order sheet, client specifications laid across the planning table, annotated by hand.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="01-2"></div>
+          <div class="photo-caption">Capacity mapping, current production bandwidth measured against incoming order volume.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="01-3"></div>
+          <div class="photo-caption">Archive comparison, previous styles referenced against new garment specifications.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="01-4"></div>
+          <div class="photo-caption">Fabric procurement request initiated, vendor communication and sample callout.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="01-5"></div>
+          <div class="photo-caption">Timeline mapping, delivery deadlines plotted against each production stage.</div>
+        </div>
+      </div>
+
+      <div class="section-title">System layer: invisible variables</div>
+      <div class="tags-area">
+        <div class="tag tag-hidden">Negotiation margin</div>
+        <div class="tag tag-time">Lead time pressure</div>
+        <div class="tag tag-labour">Expertise match</div>
+        <div class="tag tag-transport">Sample transit</div>
+        <div class="tag tag-hidden">Client approval lag</div>
+        <div class="tag tag-bottleneck">Capacity ceiling</div>
+      </div>
+
+      <div class="waste-band">
+        <div class="waste-dot" style="background:var(--thread-teal)"></div>
+        Transport: sample back-and-forth before approval
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <span class="stat-val">3–7</span>
+          <span class="stat-lbl">days to confirm</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">2–4</span>
+          <span class="stat-lbl">sample rounds</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STAGE 2: FABRIC STORAGE ═══ -->
+    <div class="stage" data-thread="teal">
+      <div class="stage-header">
+        <div class="stage-num">02</div>
+        <div class="stage-name">Fabric Storage<br>& Inventory</div>
+        <div class="stage-sub">The swatch book as memory</div>
+        <div class="header-accent" style="background:var(--thread-teal)"></div>
+      </div>
+
+      <div class="photo-roll-label">Documentation roll</div>
+      <div class="photo-roll">
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="02-1"></div>
+          <div class="photo-caption">Fabric rolls in storage, each bolt tagged with roll number, width, and meterage on hand.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="02-2"></div>
+          <div class="photo-caption">Inventory log, incoming fabric recorded by weight, shade code, and supplier reference.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="02-3"></div>
+          <div class="photo-caption">Priority planning, order urgency mapped against current stock; fast orders surface first.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="02-4"></div>
+          <div class="photo-caption">Swatch book, every fabric colour matched and fixed against its thread counterpart.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="02-5"></div>
+          <div class="photo-caption">Accessory store, buttons, zips, and trims held alongside their respective fabric lots.</div>
+        </div>
+      </div>
+
+      <div class="section-title">System layer: invisible variables</div>
+      <div class="tags-area">
+        <div class="tag tag-transport">Repeat sampling transit</div>
+        <div class="tag tag-hidden">Shade lot variation</div>
+        <div class="tag tag-waste">Dead stock risk</div>
+        <div class="tag tag-time">Fabric finalization lag</div>
+        <div class="tag tag-labour">Manual swatch matching</div>
+        <div class="tag tag-bottleneck">Storage capacity</div>
+      </div>
+
+      <div class="waste-band">
+        <div class="waste-dot" style="background:var(--thread-teal)"></div>
+        Transport loop closes only when fabric is matched to swatch
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <span class="stat-val">∞</span>
+          <span class="stat-lbl">shade variables</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">1:1</span>
+          <span class="stat-lbl">swatch to lot</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STAGE 3: CUTTING ═══ -->
+    <div class="stage" data-thread="red">
+      <div class="stage-header">
+        <div class="stage-num">03</div>
+        <div class="stage-name">Cutting</div>
+        <div class="stage-sub">Repetition as precision</div>
+        <div class="header-accent" style="background:var(--thread-red)"></div>
+      </div>
+
+      <div class="photo-roll-label">Documentation roll</div>
+      <div class="photo-roll">
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="03-1"></div>
+          <div class="photo-caption">Pattern grouping by fabric width, same-width rolls stacked for maximum marker efficiency.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="03-2"></div>
+          <div class="photo-caption">Tailor proximity check, if a tailor is finishing the same pattern, that is cut immediately.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="03-3"></div>
+          <div class="photo-caption">Fabric layering, cloth is spread in controlled plies before the blade passes through.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="03-4"></div>
+          <div class="photo-caption">Numbering, each cut piece receives a handwritten number preserving its ply origin.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="03-5"></div>
+          <div class="photo-caption">Bundling and cutting stock, numbered pieces bound together, added to the outgoing pile.</div>
+        </div>
+      </div>
+
+      <div class="section-title">System layer: invisible variables</div>
+      <div class="tags-area">
+        <div class="tag tag-bottleneck">Pattern no. conflict</div>
+        <div class="tag tag-waste">Blade-edge fabric loss</div>
+        <div class="tag tag-labour">Tailor readiness sync</div>
+        <div class="tag tag-time">Ply mis-count delay</div>
+        <div class="tag tag-hidden">Fabric grain variation</div>
+        <div class="tag tag-waste">End-of-roll remnants</div>
+      </div>
+
+      <div class="waste-band">
+        <div class="waste-dot" style="background:var(--thread-red)"></div>
+        Bottleneck: pattern-tailor synchronisation is time-critical
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <span class="stat-val">6–8</span>
+          <span class="stat-lbl">fabric plies</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">~3%</span>
+          <span class="stat-lbl">edge waste</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STAGE 4: PRODUCTION ═══ -->
+    <div class="stage" data-thread="amber">
+      <div class="stage-header">
+        <div class="stage-num">04</div>
+        <div class="stage-name">Production Floor</div>
+        <div class="stage-sub">The 50-piece rhythm</div>
+        <div class="header-accent" style="background:var(--thread-amber)"></div>
+      </div>
+
+      <div class="photo-roll-label">Documentation roll</div>
+      <div class="photo-roll">
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="04-1"></div>
+          <div class="photo-caption">Cutting stock assessment, bundles reviewed before machine assignment; accessories checked.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="04-2"></div>
+          <div class="photo-caption">Single needle machine, operator runs the main seam sequence; no more than 50 pieces issued.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="04-3"></div>
+          <div class="photo-caption">Overlock machine, separate operator finishes edges; runs on its own rhythm, not the line's.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="04-4"></div>
+          <div class="photo-caption">Tag and label issue, after mapping against the plan, labels are distributed with each bundle.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="04-5"></div>
+          <div class="photo-caption">Supporting items from store, interlinings, tapes, buttons collected and verified before sewing.</div>
+        </div>
+      </div>
+
+      <div class="section-title">System layer: invisible variables</div>
+      <div class="tags-area">
+        <div class="tag tag-bottleneck">Overlock queue depth</div>
+        <div class="tag tag-labour">Operator specialisation</div>
+        <div class="tag tag-time">50-piece batch rhythm</div>
+        <div class="tag tag-hidden">Machine downtime cost</div>
+        <div class="tag tag-bottleneck">Large order fragmentation</div>
+        <div class="tag tag-labour">Mini-line formation</div>
+      </div>
+
+      <div class="waste-band">
+        <div class="waste-dot" style="background:var(--thread-red)"></div>
+        Bottleneck: overlock operates independently, queue diverges from main line
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <span class="stat-val">≤50</span>
+          <span class="stat-lbl">pcs per issue</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">2 days</span>
+          <span class="stat-lbl">per bundle</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STAGE 5: FINISHING ═══ -->
+    <div class="stage" data-thread="purple">
+      <div class="stage-header">
+        <div class="stage-num">05</div>
+        <div class="stage-name">Finishing Tables</div>
+        <div class="stage-sub">The labour of the unseen</div>
+        <div class="header-accent" style="background:var(--thread-purple)"></div>
+      </div>
+
+      <div class="photo-roll-label">Documentation roll</div>
+      <div class="photo-roll">
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="05-1"></div>
+          <div class="photo-caption">Receipt and division, finished items land on the table, distributed among finishing staff.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="05-2"></div>
+          <div class="photo-caption">Dhaaga cutting, loose threads are cut by hand; each piece passes through multiple hands here.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="05-3"></div>
+          <div class="photo-caption">Accessory prep, flowers, embellishments, or trim pieces stitched separately before attachment.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="05-4"></div>
+          <div class="photo-caption">Ironing, the garment is pressed; structure is fixed, creases negotiated out.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="05-5"></div>
+          <div class="photo-caption">Quality check, each piece examined; those failing return to finishing before packing and barcoding.</div>
+        </div>
+      </div>
+
+      <div class="section-title">System layer: invisible variables</div>
+      <div class="tags-area">
+        <div class="tag tag-labour">Informal labour structure</div>
+        <div class="tag tag-hidden">Piece-rate invisibility</div>
+        <div class="tag tag-time">Quality loop delay</div>
+        <div class="tag tag-waste">Failed QC rejection rate</div>
+        <div class="tag tag-hidden">Heat damage risk</div>
+        <div class="tag tag-labour">Accessory stitch time</div>
+      </div>
+
+      <div class="waste-band">
+        <div class="waste-dot" style="background:var(--thread-grey)"></div>
+        Quality gate: only gate that can return work upstream
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <span class="stat-val">4–6</span>
+          <span class="stat-lbl">hands per item</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">~5%</span>
+          <span class="stat-lbl">QC return rate</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STAGE 6: OFFICE ═══ -->
+    <div class="stage" data-thread="grey">
+      <div class="stage-header">
+        <div class="stage-num">06</div>
+        <div class="stage-name">Office & Dispatch</div>
+        <div class="stage-sub">Where plan meets reality</div>
+        <div class="header-accent" style="background:var(--thread-grey)"></div>
+      </div>
+
+      <div class="photo-roll-label">Documentation roll</div>
+      <div class="photo-roll">
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="06-1"></div>
+          <div class="photo-caption">Plan downstairs, items descend from production; planning documents travel with them.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="06-2"></div>
+          <div class="photo-caption">Packing and segregation, items separated by style, colour, and destination before boxing.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="06-3"></div>
+          <div class="photo-caption">Billing, quantities reconciled against the original client order; invoice generated.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="06-4"></div>
+          <div class="photo-caption">Dispatch, boxes sealed, labelled, and handed to courier; documentation filed.</div>
+        </div>
+        <div class="photo-item">
+          <div class="photo-frame" data-slot="06-5"></div>
+          <div class="photo-caption">Order reconciliation, final count mapped against client PO; discrepancies flagged.</div>
+        </div>
+      </div>
+
+      <div class="section-title">System layer: invisible variables</div>
+      <div class="tags-area">
+        <div class="tag tag-hidden">Shortage reconciliation</div>
+        <div class="tag tag-time">Courier window pressure</div>
+        <div class="tag tag-labour">Manual billing error</div>
+        <div class="tag tag-hidden">Client penalty clauses</div>
+        <div class="tag tag-waste">Packaging material cost</div>
+        <div class="tag tag-transport">Last-mile transport</div>
+      </div>
+
+      <div class="waste-band">
+        <div class="waste-dot" style="background:var(--thread-purple)"></div>
+        Hidden cost: discrepancies here absorb margin from every stage above
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <span class="stat-val">01</span>
+          <span class="stat-lbl">order closed</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">∞</span>
+          <span class="stat-lbl">cycles repeat</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /stages-grid -->
+
+  <!-- HAND COUNT BAR -->
+  <div class="hand-count">
+    <div class="hand-item" style="--accent:var(--thread-blue)">
+      <span class="hand-num" style="color:#7fb3da">02</span>
+      <span class="hand-lbl">planning hands</span>
+    </div>
+    <div class="hand-item" style="--accent:var(--thread-teal)">
+      <span class="hand-num" style="color:#5fc4ac">03</span>
+      <span class="hand-lbl">store hands</span>
+    </div>
+    <div class="hand-item" style="--accent:var(--thread-red)">
+      <span class="hand-num" style="color:#e88577">03</span>
+      <span class="hand-lbl">cutting hands</span>
+    </div>
+    <div class="hand-item" style="--accent:var(--thread-amber)">
+      <span class="hand-num" style="color:#f0a460">06+</span>
+      <span class="hand-lbl">production hands</span>
+    </div>
+    <div class="hand-item" style="--accent:var(--thread-purple)">
+      <span class="hand-num" style="color:#b886d4">05</span>
+      <span class="hand-lbl">finishing hands</span>
+    </div>
+    <div class="hand-item" style="--accent:var(--thread-grey)">
+      <span class="hand-num" style="color:#a8b1b2">03</span>
+      <span class="hand-lbl">office hands</span>
+    </div>
+    <div class="hand-item" style="border-right:none;background:rgba(230,126,34,0.08);--accent:var(--thread-amber)">
+      <span class="hand-num" style="font-size:38px;color:#e67e22">22+</span>
+      <span class="hand-lbl" style="opacity:0.65">hands, minimum</span>
+    </div>
+  </div>
+
+  <!-- INVISIBLE SYSTEMS PANEL -->
+  <div class="systems-panel">
+    <div class="sys-item" style="--accent:#e88577">
+      <span class="sys-title">↯ Bottleneck anatomy</span>
+      <div class="sys-body">The overlock machine is not one bottleneck, it is a shadow line that runs parallel, at its own pace. When it stalls, every stage downstream stalls with it. It has no queue; it is the queue.</div>
+    </div>
+    <div class="sys-item" style="--accent:#f0a460">
+      <span class="sys-title">↯ Hidden time costs</span>
+      <div class="sys-body">Transportation is not a logistics decision, it is embedded in every stage. Fabric samples travel before fabric moves. Labels travel before garments are stitched. Transit time is production time, uncounted.</div>
+    </div>
+    <div class="sys-item" style="--accent:#b886d4">
+      <span class="sys-title">↯ Labour invisibility</span>
+      <div class="sys-body">Finishing is the most labour-dense stage and the least visible. Dhaaga cutting, accessory stitching, ironing, these operations hold no machine, no station name. They are absorbed into the per-piece rate and disappear.</div>
+    </div>
+    <div class="sys-item" style="--accent:#5fc4ac">
+      <span class="sys-title">↯ Waste typology</span>
+      <div class="sys-body">Waste is not only fabric at the blade, it is the end-of-roll remnant, the failed QC return, the over-procured accessory, the packaging discarded at dispatch. Every stage sheds something the order does not account for.</div>
+    </div>
+    <div class="sys-item" style="--accent:#7fb3da">
+      <span class="sys-title">↯ The swatch book</span>
+      <div class="sys-body">The swatch book is the factory's memory. It resolves the distance between what a client describes and what exists in the store. Without it, the entire procurement cycle must repeat. It is a low-technology object holding the system together.</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="board-footer">
+    <span>DOD · DTU · DESIGN DEGREE PROJECT · 2024–25</span>
+    <span>BOARD FORMAT: 4FT × 3FT · PRINTED · PHYSICAL THREAD OVERLAY</span>
+    <span>PHOTOGRAPHY BY THE DESIGNER · ALL PROCESSES DOCUMENTED IN-SITU</span>
+  </div>
+
+</div>
+
+<div id="tweaks-root"></div>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "captionSize": 9,
+  "captionLeading": 1.45,
+  "captionItalic": true,
+  "captionOpacity": 0.78,
+  "photoSize": "medium",
+  "photoGap": 16,
+  "rollGap": 10
+}/*EDITMODE-END*/;
+
+const PHOTO_PRESETS = {
+  small:  { w: 64, h: 48 },
+  medium: { w: 76, h: 57 },
+  large:  { w: 92, h: 69 },
+  xlarge: { w: 110, h: 82 }
+};
+
+function applyVars(t) {
+  const r = document.documentElement.style;
+  r.setProperty('--caption-size', t.captionSize + 'px');
+  r.setProperty('--caption-leading', t.captionLeading);
+  r.setProperty('--caption-style', t.captionItalic ? 'italic' : 'normal');
+  r.setProperty('--caption-opacity', t.captionOpacity);
+  const p = PHOTO_PRESETS[t.photoSize] || PHOTO_PRESETS.medium;
+  r.setProperty('--photo-w', p.w + 'px');
+  r.setProperty('--photo-h-ratio', p.h + 'px');
+  r.setProperty('--photo-gap', t.photoGap + 'px');
+  r.setProperty('--roll-gap', t.rollGap + 'px');
+}
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  React.useEffect(() => { applyVars(t); }, [t]);
+
+  return (
+    <TweaksPanel title="Tweaks">
+      <TweakSection label="Photo captions" />
+      <TweakSlider
+        label="Caption size"
+        value={t.captionSize}
+        min={7} max={12} step={0.25} unit="px"
+        onChange={(v) => setTweak('captionSize', v)}
+      />
+      <TweakSlider
+        label="Line height"
+        value={t.captionLeading}
+        min={1.2} max={1.8} step={0.05}
+        onChange={(v) => setTweak('captionLeading', v)}
+      />
+      <TweakSlider
+        label="Opacity"
+        value={t.captionOpacity}
+        min={0.4} max={1} step={0.02}
+        onChange={(v) => setTweak('captionOpacity', v)}
+      />
+      <TweakToggle
+        label="Italic"
+        value={t.captionItalic}
+        onChange={(v) => setTweak('captionItalic', v)}
+      />
+
+      <TweakSection label="Photos" />
+      <TweakRadio
+        label="Size"
+        value={t.photoSize}
+        options={['small', 'medium', 'large', 'xlarge']}
+        onChange={(v) => setTweak('photoSize', v)}
+      />
+      <TweakSlider
+        label="Photo↔caption gap"
+        value={t.photoGap}
+        min={4} max={16} step={1} unit="px"
+        onChange={(v) => setTweak('photoGap', v)}
+      />
+      <TweakSlider
+        label="Row spacing"
+        value={t.rollGap}
+        min={0} max={10} step={1} unit="px"
+        onChange={(v) => setTweak('rollGap', v)}
+      />
+    </TweaksPanel>
+  );
+}
+
+// Apply defaults immediately so first paint isn't on the old hard-coded values
+applyVars(TWEAK_DEFAULTS);
+
+// ── Photo loader ──────────────────────────────────────────────
+// For every .photo-frame[data-slot], try to load photos/<slot>.<ext>.
+// First successful extension wins. Failures leave the placeholder in place.
+(function loadPhotos() {
+  const exts = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG'];
+  const frames = document.querySelectorAll('.photo-frame[data-slot]');
+  frames.forEach(frame => {
+    const slot = frame.getAttribute('data-slot');
+    let i = 0;
+    function tryNext() {
+      if (i >= exts.length) return;
+      const img = new Image();
+      img.onload = () => {
+        const real = document.createElement('img');
+        real.src = img.src;
+        real.className = 'real';
+        real.alt = 'photo ' + slot;
+        frame.appendChild(real);
+        frame.classList.add('has-photo');
+      };
+      img.onerror = () => { i++; tryNext(); };
+      img.src = `photos/${slot}.${exts[i]}`;
+    }
+    tryNext();
+  });
+})();
+
+const root = ReactDOM.createRoot(document.getElementById('tweaks-root'));
+root.render(<App />);
+</script>
+
+</body>
+</html>
